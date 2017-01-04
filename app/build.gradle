@@ -8,10 +8,6 @@ android {
         applicationId "com.djw.rtptest"
         minSdkVersion 19
         targetSdkVersion 25
-
-//        ndk {
-//            moduleName "libilbc"
-//        }
     }
 
     buildTypes {

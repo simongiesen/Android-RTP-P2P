@@ -1,6 +1,7 @@
 package com.djw.rtptest.audio;
 
 import com.djw.rtptest.LogUtil;
+import com.djw.rtptest.audio.receiver.AudioDecoder;
 import java.io.IOException;
 import java.net.DatagramSocket;
 import java.net.SocketException;
@@ -17,55 +18,57 @@ import android.util.Log;
 import android.widget.TextView;
 
 import java.util.Enumeration;
+import java.util.concurrent.RunnableFuture;
 import jlibrtp.*;
 
 import static com.djw.rtptest.Global.T;
 import static com.djw.rtptest.crash.CrashHandler.TAG;
 
-public class RtpApp implements RTPAppIntf {
+public class RtpApp {
 
   public RTPSession rtpSession = null;
-  public RTPSession rtpSession2 = null;
 
-  private int nPacks = 0;
-
-  private LocalServerSocket lss;
-  public LocalSocket sender, receiver;
-
-  private TextView txtInfo;
+  private AudioDecoder decoder;
 
   private int nRecvPacks = 0;
   private int nRecvBytes = 0;
   private MainActivity activity;
 
-  public RtpApp(MainActivity activity, final String ip, final int port) throws SocketException {
+  private String ip;
+
+  public RtpApp(MainActivity activity, String ip) {
+
     this.activity = activity;
+    decoder = AudioDecoder.getInstance();
+    decoder.startDecoding();
+    this.ip = ip;
+    new Thread(r).start();
+  }
 
-    //initLocalSocket();
-
-    DatagramSocket rtpSocket = new DatagramSocket(port);
-    DatagramSocket rtcpSocket = new DatagramSocket(port + 1);
-
-    final DatagramSocket finalRtpSocket = rtpSocket;
-    final DatagramSocket finalRtcpSocket = rtcpSocket;
-
-    new Thread(new Runnable() {
-      @Override public void run() {
-
-        rtpSession = new RTPSession(finalRtpSocket, finalRtcpSocket);
-        rtpSession.RTPSessionRegister(RtpApp.this, callback, null);
-
+  private Runnable r = new Runnable() {
+    @Override public void run() {
+      try {
+        int port = 6000;
+        DatagramSocket rtpSocket = new DatagramSocket(port);
+        DatagramSocket rtcpSocket = new DatagramSocket(port + 1);
+        rtpSession = new RTPSession(rtpSocket, rtcpSocket);
+        rtpSession.RTPSessionRegister(rtpCallback, callback, null);
         Enumeration<Participant> e = rtpSession.getParticipants();
         while (e.hasMoreElements()) {
-          LogUtil.e("先删除之前的所有参与者...");
           rtpSession.removeParticipant(e.nextElement());
         }
-
-        Participant p;
-        p = new Participant(ip, port, port + 1);
+        Participant p = new Participant(ip, port, port + 1);
         rtpSession.addParticipant(p);
+      } catch (SocketException e) {
+        e.printStackTrace();
       }
-    }).start();
+    }
+  };
+
+  public void releaseSocket() throws IOException {
+    decoder.stopDecoding();
+    rtpSession.endSession();
+    rtpSession = null;
   }
 
   private RTCPAppIntf callback = new RTCPAppIntf() {
@@ -97,98 +100,35 @@ public class RtpApp implements RTPAppIntf {
     }
   };
 
-  public void releaseSocket() throws IOException {
-    rtpSession.endSession();
-    //releaseLocalSocket();
-  }
+  private RTPAppIntf rtpCallback = new RTPAppIntf() {
+    @Override public void receiveData(DataFrame frame, Participant participant) {
+      Log.e("receiveData", frame.rtpTimestamp() + "-------------");
+      byte[] data = frame.getConcatenatedData();
+      nRecvPacks++;
+      nRecvBytes += data.length;
+      Message message = new Message();
+      message.what = 2;
+      message.arg1 = nRecvPacks;
+      message.arg2 = nRecvBytes;
+      activity.handler.sendMessage(message);
 
-  public void receiveData(DataFrame frame, Participant p) {
-
-    Log.e("receiveData", frame.rtpTimestamp() + "-------------");
-
-    if (!Global.ok) {
-      try {
-        Thread.sleep(20);
-      } catch (InterruptedException e) {
-        e.printStackTrace();
+      message = new Message();
+      message.what = 3;
+      if (Looper.myLooper() == Looper.getMainLooper()) {
+        message.arg1 = 1;
+      } else {
+        message.arg1 = 0;
       }
-      return;
+      activity.handler.sendMessage(message);
+      decoder.addData(data, data.length);
     }
-    nPacks++;
-    byte[] data = frame.getConcatenatedData();
-    nRecvPacks++;
-    nRecvBytes += data.length;
-    Message message = new Message();
-    message.what = 2;
-    message.arg1 = nRecvPacks;
-    message.arg2 = nRecvBytes;
-    activity.handler.sendMessage(message);
 
-    message = new Message();
-    message.what = 3;
-    if (Looper.myLooper() == Looper.getMainLooper()) {
-      message.arg1 = 1;
-    } else {
-      message.arg1 = 0;
+    @Override public void userEvent(int type, Participant[] participant) {
+      LogUtil.e("userEvent(int type, Participant[] participant)");
     }
-    activity.handler.sendMessage(message);
 
-    try {
-
-
-      sender.getOutputStream().write(data);
-
-
-    } catch (IOException e) {
-      e.printStackTrace();
+    @Override public int frameSize(int payloadType) {
+      return 1;
     }
-  }
-
-  public void userEvent(int type, Participant[] participant) {
-    // Do nothing
-  }
-
-  public int frameSize(int payloadType) {
-    return 1;
-  }
-
-  private void releaseLocalSocket() throws IOException {
-    if (sender != null) {
-      sender.close();
-    }
-    if (receiver != null) {
-      receiver.close();
-    }
-    if (lss != null) {
-      lss.close();
-    }
-    sender = null;
-    receiver = null;
-    lss = null;
-  }
-
-  private boolean initLocalSocket() {
-    boolean ret = true;
-    try {
-      releaseLocalSocket();
-
-      String serverName = "rtpApp";
-      final int bufSize = 1024;
-
-      lss = new LocalServerSocket(serverName);
-
-      receiver = new LocalSocket();
-      receiver.connect(new LocalSocketAddress(serverName));
-      receiver.setReceiveBufferSize(bufSize);
-      receiver.setSendBufferSize(bufSize);
-
-      sender = lss.accept();
-      sender.setReceiveBufferSize(bufSize);
-      sender.setSendBufferSize(bufSize);
-    } catch (IOException e) {
-
-      ret = false;
-    }
-    return ret;
-  }
+  };
 }

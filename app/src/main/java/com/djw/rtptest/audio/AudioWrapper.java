@@ -1,13 +1,11 @@
 package com.djw.rtptest.audio;
 
-import com.djw.rtptest.audio.receiver.AudioReceiver;
 import com.djw.rtptest.audio.sender.AudioRecorder;
 
 
 public class AudioWrapper {
 
 	private AudioRecorder audioRecorder;
-	private AudioReceiver audioReceiver;
 
 	private static AudioWrapper instanceAudioWrapper;
 
@@ -31,13 +29,6 @@ public class AudioWrapper {
 	public void stopRecord() {
 		if (audioRecorder != null)
 			audioRecorder.stopRecording();
-	}
-
-	public void startListen() {
-		if (null == audioReceiver) {
-			audioReceiver = new AudioReceiver();
-		}
-		audioReceiver.startRecieving();
 	}
 
 	public void stopListen() {
