@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:orientation="vertical" >
+
+    <EditText
+        android:id="@+id/txtIP"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="192.168.22.107" >
+
+        <requestFocus />
+    </EditText>
+
+    <EditText
+        android:id="@+id/txtPort"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:ems="10"
+        android:text="6000" />
+
+    <Button
+        android:id="@+id/startEncode"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="  开  始  " />
+
+    <Button
+        android:id="@+id/stopEncode"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="  停  止  " />
+
+    <TextView
+        android:id="@+id/txtSend"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_weight="0.00"
+        android:text="TextView" />
+
+    <TextView
+        android:id="@+id/txtRecv"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_weight="0.00"
+        android:text="TextView" />
+
+    <TextView
+        android:id="@+id/txtInfo"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_weight="0.45"
+        android:text="TextView" />
+
+</LinearLayout>
