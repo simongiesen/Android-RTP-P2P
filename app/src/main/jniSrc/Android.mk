@@ -38,9 +38,7 @@ include $(CLEAR_VARS)
 
 LOCAL_MODULE := audiowrapper
 
-LOCAL_C_INCLUDES += \
-    $(JNI_H_INCLUDE) \
-    $(codec_dir)
+LOCAL_C_INCLUDES += $(LOCAL_PATH)/ilbc_src/
 
 LOCAL_SRC_FILES := audiowrapper.c
 LOCAL_LDLIBS := -L$(SYSROOT)/usr/lib -llog

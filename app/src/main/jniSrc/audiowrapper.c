@@ -11,6 +11,10 @@
 #include <utils/Log.h>
 #else
 #include <android/log.h>
+#include <ilbc_src/iLBC_define.h>
+#include <ilbc_src/iLBC_encode.h>
+#include <ilbc_src/iLBC_decode.h>
+
 #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
 #define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG  , LOG_TAG, __VA_ARGS__) 
 
